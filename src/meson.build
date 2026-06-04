@@ -111,6 +111,12 @@ if enable_dbus
   kmscon_srcs += 'dbus.c'
   kmscon_dep += dbus_deps
 endif
+# IM abstraction layer — always compiled; backends are conditional
+kmscon_srcs += 'kmscon_im.c'
+if enable_im_hangul
+  kmscon_srcs += 'im_hangul.c'
+  kmscon_dep += libhangul_deps
+endif
 kmscon = executable('kmscon', kmscon_srcs,
   dependencies: kmscon_dep,
   export_dynamic: true,

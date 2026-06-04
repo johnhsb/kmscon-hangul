@@ -162,6 +162,15 @@ static void print_help()
 		"\t    --grab-reboot <grab>        []\n"
 		"\t                                  Reboot the system (disabled by default)\n"
 		"\n"
+		"Input Method Options:\n"
+		"\t    --im-engine <name>          []\n"
+		"\t                                  Input method engine (\"hangul\", …)\n"
+		"\t    --im-params <params>        [2]\n"
+		"\t                                  Engine-specific parameters\n"
+		"\t                                  (hangul: keyboard id, e.g. \"2\", \"3f\")\n"
+		"\t    --grab-im-toggle <grab>     [Hangul]\n"
+		"\t                                  Toggle input method on/off\n"
+		"\n"
 		"Video Options:\n"
 		"\t    --drm                     [on]    Use DRM if available\n"
 		"\t    --hwaccel                 [off]   Use 3D hardware-acceleration if\n"
@@ -674,6 +683,8 @@ static struct conf_grab def_grab_rotate_cw =
 
 static struct conf_grab def_grab_rotate_ccw = CONF_SINGLE_GRAB(SHL_LOGO_MASK, XKB_KEY_minus);
 
+static struct conf_grab def_grab_im_toggle = CONF_SINGLE_GRAB(0, XKB_KEY_Hangul);
+
 static palette_t def_palette = {
 	[TSM_COLOR_BLACK] = {0, 0, 0},		   /* black */
 	[TSM_COLOR_RED] = {205, 0, 0},		   /* red */
@@ -778,6 +789,12 @@ int kmscon_conf_new(struct conf_ctx **out)
 		CONF_OPTION_GRAB(0, "grab-rotate-ccw", &conf->grab_rotate_ccw,
 				 &def_grab_rotate_ccw),
 		CONF_OPTION_GRAB(0, "grab-reboot", &conf->grab_reboot, NULL),
+
+		/* Input Method Options */
+		CONF_OPTION_STRING(0, "im-engine", &conf->im_engine, ""),
+		CONF_OPTION_STRING(0, "im-params", &conf->im_params, "2"),
+		CONF_OPTION_GRAB(0, "grab-im-toggle", &conf->grab_im_toggle,
+				 &def_grab_im_toggle),
 
 		/* Video Options */
 		CONF_OPTION_BOOL_FULL(0, "drm", aftercheck_drm, NULL, NULL, &conf->drm, true),

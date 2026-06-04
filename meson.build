@@ -49,6 +49,7 @@ fs = import('fs')
 
 xkbcommon_deps = dependency('xkbcommon', version: '>=0.5.0')
 libtsm_deps = dependency('libtsm', version: '>=4.5.0', allow_fallback: true)
+
 libudev_deps = dependency('libudev', version: '>=172')
 dl_deps = dependency('dl')
 threads_deps = dependency('threads')
@@ -77,6 +78,7 @@ pango_deps = dependency('pangoft2', disabler: true, required: get_option('font_p
 freetype_deps = dependency('freetype2', disabler: true, required: get_option('font_freetype'))
 fontconfig_deps = dependency('fontconfig', disabler: true, required: get_option('font_freetype'))
 dbus_deps = dependency('dbus-1', disabler: true, required: get_option('dbus'))
+libhangul_deps = dependency('libhangul', disabler: true, required: get_option('im_hangul'))
 xsltproc = find_program('xsltproc', native: true, disabler: true, required: get_option('docs'))
 check_deps = dependency('check', disabler: true, required: get_option('tests'))
 tic = find_program('tic', required: false)
@@ -92,6 +94,7 @@ sections = {
   'font': 'Font Backends',
   'renderer': 'Renderers',
   'session': 'Session Types',
+  'im': 'Input Methods',
 }
 config = configuration_data()
 # Note: keep this in sync with the dependencies above
@@ -107,6 +110,7 @@ foreach name, reqs : {
   'session_dummy': [],
   'session_terminal': [],
   'dbus': [dbus_deps],
+  'im_hangul': [libhangul_deps],
 }
   found = true
   foreach req : reqs

@@ -40,6 +40,7 @@
 #include "font/font.h"
 #include "input/input.h"
 #include "kmscon_conf.h"
+#include "kmscon_im.h"
 #include "kmscon_issue.h"
 #include "kmscon_seat.h"
 #include "kmscon_terminal.h"
@@ -99,6 +100,11 @@ struct kmscon_terminal {
 	struct kmscon_font *font;
 
 	struct kmscon_pointer pointer;
+
+	/* Input method */
+	struct kmscon_im *im;
+	bool im_mode;
+	uint32_t im_preedit; /* UCS4 char drawn at cursor during composition */
 };
 
 static int font_set(struct kmscon_terminal *term);
@@ -127,6 +133,39 @@ static void draw_pointer(struct screen *scr)
 		return;
 
 	kmscon_text_draw_pointer(scr->txt, scr->term->pointer.x, scr->term->pointer.y);
+}
+
+/*
+ * Overlay the preedit character at the current cursor position so the user
+ * can see the syllable block being composed.  The character is drawn with an
+ * underline attribute on top of whatever the VTE already put there.
+ *
+ * Phase 2 note: for multi-char preedit (Chinese Pinyin, Japanese Kana) this
+ * function would iterate over a preedit string starting at (cx, cy) and
+ * advance posx for each character.
+ */
+static void draw_im_preedit(struct screen *scr)
+{
+	struct kmscon_terminal *term = scr->term;
+	struct tsm_screen_attr attr;
+	unsigned int cx, cy, width;
+	uint32_t ch;
+
+	if (!term->im_mode || !term->im_preedit)
+		return;
+
+	ch = term->im_preedit;
+	cx = tsm_screen_get_cursor_x(term->console);
+	cy = tsm_screen_get_cursor_y(term->console);
+
+	tsm_vte_get_def_attr(term->vte, &attr);
+	attr.underline = 1;
+
+	width = tsm_ucs4_get_width(ch);
+	if (width == 0)
+		width = 1;
+
+	kmscon_text_draw(scr->txt, (uint64_t)ch, &ch, 1, width, cx, cy, &attr);
 }
 
 static inline uint32_t argb(uint8_t a, uint8_t r, uint8_t g, uint8_t b)
@@ -304,6 +343,7 @@ static void do_redraw_screen(struct screen *scr)
 	tsm_vte_get_def_attr(scr->term->vte, &attr);
 	kmscon_text_prepare(scr->txt, &attr);
 	tsm_screen_draw(scr->term->console, kmscon_text_draw_cb, scr->txt);
+	draw_im_preedit(scr);
 	draw_pointer(scr);
 	kmscon_text_render(scr->txt);
 
@@ -760,6 +800,23 @@ static void rm_display(struct kmscon_terminal *term, struct display *disp)
 	free_screen(scr, true);
 }
 
+/* Write a NULL-terminated UCS4 string to the PTY, converting char by char. */
+static void im_commit_to_pty(struct kmscon_terminal *term,
+			      const uint32_t *ucs4)
+{
+	char u8[4];
+	size_t len;
+
+	if (!ucs4)
+		return;
+	while (*ucs4) {
+		len = tsm_ucs4_to_utf8(*ucs4, u8);
+		if (len > 0)
+			kmscon_pty_write(term->pty, u8, len);
+		ucs4++;
+	}
+}
+
 static void input_event(struct input *input, struct input_key_event *ev, void *data)
 {
 	struct kmscon_terminal *term = data;
@@ -831,6 +888,49 @@ static void input_event(struct input *input, struct input_key_event *ev, void *d
 	 * uses this, yet. */
 	if (ev->num_syms > 1)
 		return;
+
+	/* IM toggle — switch composition mode on/off */
+	if (term->im &&
+	    conf_grab_matches(term->conf->grab_im_toggle,
+			      ev->mods, ev->num_syms, ev->keysyms)) {
+		term->im_mode = !term->im_mode;
+		if (!term->im_mode) {
+			struct kmscon_im_result r;
+
+			kmscon_im_flush(term->im, &r);
+			im_commit_to_pty(term, r.commit);
+			term->im_preedit = 0;
+		}
+		redraw_all(term);
+		ev->handled = true;
+		return;
+	}
+
+	/* IM key processing — only when IM mode is active */
+	if (term->im && term->im_mode) {
+		struct kmscon_im_result r;
+
+		if (kmscon_im_process_key(term->im, ev->keysyms[0],
+					  ev->mods, &r)) {
+			im_commit_to_pty(term, r.commit);
+			term->im_preedit = r.preedit;
+			tsm_screen_sb_reset(term->console);
+			redraw_all(term);
+			ev->handled = true;
+			return;
+		}
+		/* Key not consumed by IM: commit any flushed chars, then fall
+		 * through so the VTE also sees the key. */
+		bool had_preedit = (term->im_preedit != 0);
+
+		im_commit_to_pty(term, r.commit);
+		term->im_preedit = r.preedit;
+
+		/* Preedit was cleared by a passthrough flush — redraw now so
+		 * the overlay disappears even if VTE does not handle this key. */
+		if (had_preedit && !term->im_preedit)
+			redraw_all(term);
+	}
 
 	if (tsm_vte_handle_keyboard(term->vte, ev->keysyms[0], ev->ascii, ev->mods,
 				    ev->codepoints[0])) {
@@ -1090,6 +1190,7 @@ static void terminal_destroy(struct kmscon_terminal *term)
 	input_unregister_key_cb(term->input, input_event, term);
 	ev_eloop_rm_fd(term->ptyfd);
 	kmscon_pty_unref(term->pty);
+	kmscon_im_destroy(term->im);
 	kmscon_font_unref(term->font);
 	tsm_vte_unref(term->vte);
 	tsm_screen_unref(term->console);
@@ -1127,6 +1228,13 @@ static int session_event(struct kmscon_session *session, struct kmscon_session_e
 	case KMSCON_SESSION_DEACTIVATE:
 		term->awake = false;
 		hw_cursor_hide(term);
+		if (term->im && !kmscon_im_is_empty(term->im)) {
+			struct kmscon_im_result r;
+
+			kmscon_im_flush(term->im, &r);
+			im_commit_to_pty(term, r.commit);
+			term->im_preedit = 0;
+		}
 		break;
 	case KMSCON_SESSION_UNREGISTER:
 		terminal_destroy(term);
@@ -1211,6 +1319,15 @@ int kmscon_terminal_register(struct kmscon_session **out, struct kmscon_seat *se
 	ret = tsm_vte_set_custom_palette(term->vte, term->conf->custom_palette);
 	if (ret)
 		goto err_vte;
+
+	if (term->conf->im_engine && *term->conf->im_engine) {
+		ret = kmscon_im_new(&term->im, term->conf->im_engine,
+				    term->conf->im_params);
+		if (ret)
+			log_warning("IM engine '%s' unavailable (%d), continuing without IM",
+				    term->conf->im_engine, ret);
+		/* non-fatal: term->im stays NULL, IM is simply disabled */
+	}
 
 	ret = font_set(term);
 	if (ret)

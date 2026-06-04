@@ -158,6 +158,14 @@ struct kmscon_conf_t {
 	/* reboot system grab */
 	struct conf_grab *grab_reboot;
 
+	/* Input Method Options */
+	/* IM engine name: "" = disabled, "hangul" = Korean, … */
+	char *im_engine;
+	/* Engine-specific params (e.g. keyboard layout id for hangul) */
+	char *im_params;
+	/* Key grab to toggle IM mode on/off */
+	struct conf_grab *grab_im_toggle;
+
 	/* Video Options */
 	/* use DRM if available */
 	bool drm;

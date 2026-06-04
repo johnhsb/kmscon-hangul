@@ -516,7 +516,24 @@ static struct kmscon_glyph *kmscon_font_freetype_render(struct kmscon_font *font
 		ftfont->fallback = prepare_tmp_face(ftd->ft, ftfont, fallback_index);
 		if (!ftfont->fallback)
 			return NULL;
-		select_font_size(ftfont->fallback, &font->attr);
+		/*
+		 * Size the fallback font using the primary face's em-square
+		 * (y_ppem), NOT the line height stored in font->attr.height.
+		 *
+		 * compute_font_size() overwrites attr->height with the line
+		 * height (metrics.height >> 6, typically 19-20px for a 16px
+		 * font).  Using that value for the fallback CJK face sets its
+		 * em-square to the full line height, causing CJK glyphs to fill
+		 * ~95% of the cell while Latin fills only ~60% — making Korean
+		 * appear disproportionately large.
+		 *
+		 * y_ppem is the actual em-square that was requested (≈ user's
+		 * font-size), so CJK glyphs render at the same visual scale as
+		 * Latin glyphs from the primary face.
+		 */
+		struct kmscon_font_attr em_attr = font->attr;
+		em_attr.height = ftfont->face->size->metrics.y_ppem;
+		select_font_size(ftfont->fallback, &em_attr);
 	}
 
 	glyph_index = FT_Get_Char_Index(ftfont->fallback, *ch);

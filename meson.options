@@ -38,3 +38,7 @@ option('session_terminal', type: 'feature', value: 'auto',
 # dbus integration
 option('dbus', type: 'feature', value: 'auto',
   description: 'dbus integration')
+
+# input methods
+option('im_hangul', type: 'feature', value: 'auto',
+  description: 'Korean (Hangul) input method via libhangul')
