@@ -801,8 +801,7 @@ static void rm_display(struct kmscon_terminal *term, struct display *disp)
 }
 
 /* Write a NULL-terminated UCS4 string to the PTY, converting char by char. */
-static void im_commit_to_pty(struct kmscon_terminal *term,
-			      const uint32_t *ucs4)
+static void im_commit_to_pty(struct kmscon_terminal *term, const uint32_t *ucs4)
 {
 	char u8[4];
 	size_t len;
@@ -891,8 +890,7 @@ static void input_event(struct input *input, struct input_key_event *ev, void *d
 
 	/* IM toggle — switch composition mode on/off */
 	if (term->im &&
-	    conf_grab_matches(term->conf->grab_im_toggle,
-			      ev->mods, ev->num_syms, ev->keysyms)) {
+	    conf_grab_matches(term->conf->grab_im_toggle, ev->mods, ev->num_syms, ev->keysyms)) {
 		term->im_mode = !term->im_mode;
 		if (!term->im_mode) {
 			struct kmscon_im_result r;
@@ -910,8 +908,7 @@ static void input_event(struct input *input, struct input_key_event *ev, void *d
 	if (term->im && term->im_mode) {
 		struct kmscon_im_result r;
 
-		if (kmscon_im_process_key(term->im, ev->keysyms[0],
-					  ev->mods, &r)) {
+		if (kmscon_im_process_key(term->im, ev->keysyms[0], ev->mods, &r)) {
 			im_commit_to_pty(term, r.commit);
 			term->im_preedit = r.preedit;
 			tsm_screen_sb_reset(term->console);
@@ -1321,8 +1318,7 @@ int kmscon_terminal_register(struct kmscon_session **out, struct kmscon_seat *se
 		goto err_vte;
 
 	if (term->conf->im_engine && *term->conf->im_engine) {
-		ret = kmscon_im_new(&term->im, term->conf->im_engine,
-				    term->conf->im_params);
+		ret = kmscon_im_new(&term->im, term->conf->im_engine, term->conf->im_params);
 		if (ret)
 			log_warning("IM engine '%s' unavailable (%d), continuing without IM",
 				    term->conf->im_engine, ret);

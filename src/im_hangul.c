@@ -62,7 +62,7 @@
 
 struct hangul_ctx {
 	HangulInputContext *hic;
-	uint32_t            commit_buf[COMMIT_BUF_SIZE];
+	uint32_t commit_buf[COMMIT_BUF_SIZE];
 };
 
 /* ------------------------------------------------------------------ */
@@ -73,8 +73,7 @@ struct hangul_ctx {
  * Copy a libhangul UCS4 string (ucschar = uint32_t) into the commit buffer
  * and return the pointer, or NULL if nothing was committed.
  */
-static const uint32_t *capture_commit(struct hangul_ctx *ctx,
-				      const ucschar *src)
+static const uint32_t *capture_commit(struct hangul_ctx *ctx, const ucschar *src)
 {
 	size_t i;
 
@@ -156,14 +155,13 @@ static void hangul_destroy(struct kmscon_im *im)
 	free(ctx);
 }
 
-static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym,
-				unsigned int mods,
-				struct kmscon_im_result *out)
+static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym, unsigned int mods,
+			       struct kmscon_im_result *out)
 {
 	struct hangul_ctx *ctx = im->data;
 	bool consumed;
 
-	out->commit  = NULL;
+	out->commit = NULL;
 	out->preedit = 0;
 
 	/*
@@ -176,8 +174,7 @@ static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym,
 
 	/* BackSpace: try to un-compose one jamo inside the IC. */
 	if (keysym == XKB_KEY_BackSpace) {
-		if (!hangul_ic_is_empty(ctx->hic) &&
-		    hangul_ic_backspace(ctx->hic)) {
+		if (!hangul_ic_is_empty(ctx->hic) && hangul_ic_backspace(ctx->hic)) {
 			out->preedit = current_preedit(ctx);
 			return true; /* consumed */
 		}
@@ -193,7 +190,7 @@ static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym,
 		if (!hangul_ic_is_empty(ctx->hic)) {
 			const ucschar *fc = hangul_ic_flush(ctx->hic);
 
-			out->commit  = capture_commit(ctx, fc);
+			out->commit = capture_commit(ctx, fc);
 			out->preedit = 0;
 		}
 		return false; /* not consumed — VTE still gets the key */
@@ -202,7 +199,7 @@ static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym,
 	/* Feed the keysym to libhangul as an ASCII value. */
 	consumed = hangul_ic_process(ctx->hic, (int)keysym);
 
-	out->commit  = capture_commit(ctx, hangul_ic_get_commit_string(ctx->hic));
+	out->commit = capture_commit(ctx, hangul_ic_get_commit_string(ctx->hic));
 	out->preedit = current_preedit(ctx);
 
 	return consumed;
@@ -213,7 +210,7 @@ static void hangul_flush(struct kmscon_im *im, struct kmscon_im_result *out)
 	struct hangul_ctx *ctx = im->data;
 	const ucschar *fc;
 
-	out->commit  = NULL;
+	out->commit = NULL;
 	out->preedit = 0;
 
 	if (hangul_ic_is_empty(ctx->hic))
@@ -235,10 +232,10 @@ static bool hangul_is_empty(const struct kmscon_im *im)
 /* ------------------------------------------------------------------ */
 
 const struct kmscon_im_ops im_hangul_ops = {
-	.name        = "hangul",
-	.init        = hangul_init,
-	.destroy     = hangul_destroy,
+	.name = "hangul",
+	.init = hangul_init,
+	.destroy = hangul_destroy,
 	.process_key = hangul_process_key,
-	.flush       = hangul_flush,
-	.is_empty    = hangul_is_empty,
+	.flush = hangul_flush,
+	.is_empty = hangul_is_empty,
 };

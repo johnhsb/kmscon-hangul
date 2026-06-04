@@ -793,8 +793,7 @@ int kmscon_conf_new(struct conf_ctx **out)
 		/* Input Method Options */
 		CONF_OPTION_STRING(0, "im-engine", &conf->im_engine, ""),
 		CONF_OPTION_STRING(0, "im-params", &conf->im_params, "2"),
-		CONF_OPTION_GRAB(0, "grab-im-toggle", &conf->grab_im_toggle,
-				 &def_grab_im_toggle),
+		CONF_OPTION_GRAB(0, "grab-im-toggle", &conf->grab_im_toggle, &def_grab_im_toggle),
 
 		/* Video Options */
 		CONF_OPTION_BOOL_FULL(0, "drm", aftercheck_drm, NULL, NULL, &conf->drm, true),

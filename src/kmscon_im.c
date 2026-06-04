@@ -69,8 +69,7 @@ static const struct kmscon_im_ops *backends[] = {
 /* Public API                                                           */
 /* ------------------------------------------------------------------ */
 
-int kmscon_im_new(struct kmscon_im **out, const char *engine,
-		  const char *params)
+int kmscon_im_new(struct kmscon_im **out, const char *engine, const char *params)
 {
 	const struct kmscon_im_ops *ops = NULL;
 	struct kmscon_im *im;
@@ -117,8 +116,8 @@ void kmscon_im_destroy(struct kmscon_im *im)
 	free(im);
 }
 
-bool kmscon_im_process_key(struct kmscon_im *im, uint32_t keysym,
-			   unsigned int mods, struct kmscon_im_result *out)
+bool kmscon_im_process_key(struct kmscon_im *im, uint32_t keysym, unsigned int mods,
+			   struct kmscon_im_result *out)
 {
 	if (!im || !out)
 		return false;

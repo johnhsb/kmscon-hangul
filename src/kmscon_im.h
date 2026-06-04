@@ -53,11 +53,11 @@ struct kmscon_im;
  * Bit positions intentionally mirror input_modifier in input/input.h so
  * ev->mods can be forwarded verbatim.
  */
-#define KMSCON_IM_MOD_SHIFT  (1u << 0)
-#define KMSCON_IM_MOD_LOCK   (1u << 1)
-#define KMSCON_IM_MOD_CTRL   (1u << 2)
-#define KMSCON_IM_MOD_ALT    (1u << 3)
-#define KMSCON_IM_MOD_LOGO   (1u << 4)
+#define KMSCON_IM_MOD_SHIFT (1u << 0)
+#define KMSCON_IM_MOD_LOCK (1u << 1)
+#define KMSCON_IM_MOD_CTRL (1u << 2)
+#define KMSCON_IM_MOD_ALT (1u << 3)
+#define KMSCON_IM_MOD_LOGO (1u << 4)
 
 /*
  * Result of a single IM operation.
@@ -116,8 +116,8 @@ struct kmscon_im_ops {
 	 * Returns true if the key was consumed by the IM and must NOT be
 	 * forwarded to tsm_vte_handle_keyboard().
 	 */
-	bool (*process_key)(struct kmscon_im *im, uint32_t keysym,
-			    unsigned int mods, struct kmscon_im_result *out);
+	bool (*process_key)(struct kmscon_im *im, uint32_t keysym, unsigned int mods,
+			    struct kmscon_im_result *out);
 
 	/*
 	 * Force-complete any pending composition (e.g. on IM-mode exit or
@@ -143,13 +143,12 @@ struct kmscon_im {
  * Returns 0 on success, -ENOENT if the engine is unknown or not compiled in,
  * -ENOMEM on allocation failure.
  */
-int kmscon_im_new(struct kmscon_im **out, const char *engine,
-		  const char *params);
+int kmscon_im_new(struct kmscon_im **out, const char *engine, const char *params);
 
 void kmscon_im_destroy(struct kmscon_im *im);
 
-bool kmscon_im_process_key(struct kmscon_im *im, uint32_t keysym,
-			   unsigned int mods, struct kmscon_im_result *out);
+bool kmscon_im_process_key(struct kmscon_im *im, uint32_t keysym, unsigned int mods,
+			   struct kmscon_im_result *out);
 
 void kmscon_im_flush(struct kmscon_im *im, struct kmscon_im_result *out);
 
