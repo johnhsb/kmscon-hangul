@@ -123,7 +123,7 @@ static bool should_passthrough(uint32_t keysym, unsigned int mods)
 /* kmscon_im_ops implementation                                         */
 /* ------------------------------------------------------------------ */
 
-static int hangul_init(struct kmscon_im *im, const char *params)
+static int im_hangul_init(struct kmscon_im *im, const char *params)
 {
 	struct hangul_ctx *ctx;
 	const char *keyboard;
@@ -147,7 +147,7 @@ static int hangul_init(struct kmscon_im *im, const char *params)
 	return 0;
 }
 
-static void hangul_destroy(struct kmscon_im *im)
+static void im_hangul_destroy(struct kmscon_im *im)
 {
 	struct hangul_ctx *ctx = im->data;
 
@@ -155,8 +155,8 @@ static void hangul_destroy(struct kmscon_im *im)
 	free(ctx);
 }
 
-static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym, unsigned int mods,
-			       struct kmscon_im_result *out)
+static bool im_hangul_process_key(struct kmscon_im *im, uint32_t keysym, unsigned int mods,
+				  struct kmscon_im_result *out)
 {
 	struct hangul_ctx *ctx = im->data;
 	bool consumed;
@@ -205,7 +205,7 @@ static bool hangul_process_key(struct kmscon_im *im, uint32_t keysym, unsigned i
 	return consumed;
 }
 
-static void hangul_flush(struct kmscon_im *im, struct kmscon_im_result *out)
+static void im_hangul_flush(struct kmscon_im *im, struct kmscon_im_result *out)
 {
 	struct hangul_ctx *ctx = im->data;
 	const ucschar *fc;
@@ -220,7 +220,7 @@ static void hangul_flush(struct kmscon_im *im, struct kmscon_im_result *out)
 	out->commit = capture_commit(ctx, fc);
 }
 
-static bool hangul_is_empty(const struct kmscon_im *im)
+static bool im_hangul_is_empty(const struct kmscon_im *im)
 {
 	const struct hangul_ctx *ctx = im->data;
 
@@ -233,9 +233,9 @@ static bool hangul_is_empty(const struct kmscon_im *im)
 
 const struct kmscon_im_ops im_hangul_ops = {
 	.name = "hangul",
-	.init = hangul_init,
-	.destroy = hangul_destroy,
-	.process_key = hangul_process_key,
-	.flush = hangul_flush,
-	.is_empty = hangul_is_empty,
+	.init = im_hangul_init,
+	.destroy = im_hangul_destroy,
+	.process_key = im_hangul_process_key,
+	.flush = im_hangul_flush,
+	.is_empty = im_hangul_is_empty,
 };
