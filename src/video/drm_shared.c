@@ -888,6 +888,20 @@ static int perform_modeset(struct video *video)
 		return ret;
 	}
 
+	/*
+	 * Take a ref on each display before any commit attempt so that
+	 * display_unref() in the error path is always balanced.  Previously
+	 * the refs were taken only after the test-only commit succeeded, which
+	 * meant a goto err_commit from the test-only failure skipped
+	 * display_ref() while err_commit still called display_unref(), causing
+	 * a refcount underflow, premature free(), and SEGV on retry.
+	 */
+	shl_dlist_for_each(iter, &video->displays)
+	{
+		disp = shl_dlist_entry(iter, struct display, list);
+		display_ref(disp);
+	}
+
 	/* perform test-only atomic commit */
 	flags = DRM_MODE_ATOMIC_TEST_ONLY | DRM_MODE_ATOMIC_ALLOW_MODESET;
 	ret = drmModeAtomicCommit(vdrm->fd, req, flags, NULL);
@@ -895,12 +909,6 @@ static int perform_modeset(struct video *video)
 		log_err("test-only atomic commit failed, %d\n", ret);
 		ret = -EAGAIN;
 		goto err_commit;
-	}
-
-	shl_dlist_for_each(iter, &video->displays)
-	{
-		disp = shl_dlist_entry(iter, struct display, list);
-		display_ref(disp);
 	}
 
 	/* initial modeset on all outputs */
