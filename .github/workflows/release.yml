@@ -29,6 +29,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Fetch libtsm subproject
+        run: git clone --depth 1 --branch v4.5.0 https://github.com/kmscon/libtsm subprojects/libtsm
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
