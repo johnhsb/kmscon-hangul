@@ -12,6 +12,7 @@ override_dh_auto_configure:
 		-Ddocs=disabled \
 		-Dim_hangul=enabled \
 		-Dlibtsm:default_library=static \
+		-Dlibtsm:tests=false \
 		--force-fallback-for=libtsm
 
 override_dh_auto_install:
