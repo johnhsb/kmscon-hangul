@@ -16,3 +16,6 @@ override_dh_auto_configure:
 
 override_dh_auto_install:
 	dh_auto_install
+	rm -f debian/kmscon-hangul/usr/lib/$(DEB_HOST_MULTIARCH)/libtsm.so*
+	rm -f debian/kmscon-hangul/usr/include/libtsm.h
+	rm -f debian/kmscon-hangul/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/libtsm.pc
