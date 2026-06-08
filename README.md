@@ -1,119 +1,143 @@
-# KMSCON
+# kmscon-hangul
 
-![Build Status](https://github.com/kmscon/kmscon/actions/workflows/meson.yml/badge.svg?branch=main)
+[![Build Status](https://github.com/johnhsb/kmscon-hangul/actions/workflows/meson.yml/badge.svg?branch=main)](https://github.com/johnhsb/kmscon-hangul/actions/workflows/meson.yml)
+[![Release](https://img.shields.io/github/v/release/johnhsb/kmscon-hangul)](https://github.com/johnhsb/kmscon-hangul/releases/latest)
+
+[kmscon](https://github.com/kmscon/kmscon) v10.0.0 기반 한글 입력 지원 및 버그 수정 포크.
 
 Kmscon is a simple terminal emulator based on linux kernel mode setting (KMS).
-It is an attempt to replace the in-kernel VT implementation with a userspace
-console. See kmscon(1) man-page for usage information.
+It is an attempt to replace the in-kernel VT implementation with a userspace console.
 
-## Requirements
-### Mandatory dependencies
-Kmscon requires the following software:
-  - [libtsm](https://github.com/kmscon/libtsm): terminal emulator state machine
-  - [libudev](https://www.freedesktop.org/software/systemd/man/libudev.html): providing input, video, etc. device hotplug support (>=v172)
-  - [libxkbcommon](https://xkbcommon.org/): providing internationalized keyboard handling
-  - **linux-headers**: linux kernel headers for ABI definitions
+## 변경 사항 (upstream 대비)
 
-### Optional dependencies
-#### Video
+### 한글 입력 지원
+- 범용 IM 추상화 레이어 (`kmscon_im_ops` vtable) 추가 — 향후 다른 입력기 추가 가능
+- libhangul 기반 한글 입력 백엔드 (`im_hangul`) — 두벌식/세벌식 지원
+- 신규 옵션:
+  - `--im-engine=hangul` : 한글 입력기 활성화
+  - `--im-params=2` : 키보드 레이아웃 선택 (`2`=두벌식, `32`/`3f`/`3s`=세벌식 등)
+  - `--grab-im-toggle=<keysym>` : 한/영 전환 키 설정
 
-For video output at least one of the following is required:
-- [libdrm](https://gitlab.freedesktop.org/mesa/drm): graphics access to DRM/KMS subsystemDRM: For unaccelerated drm output the "libdrm" library must be installed and accessible via pkg-config.
-- **OpenGLES2**: For accelerated video output via OpenGLESv2 the following must be installed: libdrm, libgbm, egl, glesv2 (i.e., mesa)
-- **fbdev**: For framebuffer video output the kernel headers must be installed and located in the default include path, and the kernel built with fbdev device support (which is disabled on some distributions).
+### 버그 수정
+- `video/drm`: `perform_modeset()`의 use-after-free SEGV 수정 (VT 전환/DPMS 복귀 시 크래시)
+- `font/freetype`: CJK 폰트 크기 오류 수정 — `y_ppem` 기준으로 폰트 크기 계산하여 한글 글자가 라틴 문자 대비 과도하게 크게 표시되던 문제 해결
 
-#### Fonts
-For font handling the following is required:
-- **8x16**: The 8x16 font is a static built-in font which does not require external dependencies.
-- [unifont](https://unifoundry.com/unifont/index.html):Embed unifont in kmscon, this requires no external dependencies.
-- [freetype](https://freetype.org/): lightweight font rendering, using only freetype2 and fontconfig.
-- [pango](https://gitlab.gnome.org/GNOME/pango): drawing text with Pango requires: glib, pango, fontconfig, freetype2 and more
+### 패키징
+- Debian 패키지 (`kmscon-hangul`) 지원 — libtsm 정적 링크 포함
+- GitHub Actions 자동 빌드: amd64 / arm64 .deb 패키지
 
-#### Seats
-- [libseat](https://sr.ht/~kennylevinsen/seatd/): Kmscon can take a seat with libseat . In this case you must have either systemd-logind, elogind, or seatd configured. It allows to run kmscon as a regular user, and configure which GPU/input device are allowed for kmscon. The drawback is that kmscon-launch-gui won't work to launch another GUI that uses libseat, as the seat is already in use.
-- If libseat is not present, kmscon will use its own VT handling, or a fake backend if VT is disabled in the kernel.
+## 설치 (Debian trixie)
 
-#### Terminfo
- - [ncurses](https://invisible-island.net/ncurses/) You need the `tic` executable from ncurses, to build kmscon.ti into a binary terminfo definition.
-
-## Setup
-
-On Debian-based system, to install the systemd service files in the right location, you need to install systemd-dev.
 ```bash
-sudo apt install systemd-dev
+# GitHub Releases에서 다운로드
+sudo apt install ./kmscon-hangul_*_arm64.deb   # ARM64
+sudo apt install ./kmscon-hangul_*_amd64.deb   # x86_64
 ```
 
-To build with manpages and documentation, the following is required:
- - xsltproc (packaged as `libxslt` in Fedora, or `xsltproc` in Ubuntu/Debian)
- - docbook stylesheets (packaged as `docbook-style-xsl` in Fedora, or `docbook-xsl` in Ubuntu/Debian)
+최신 릴리즈: https://github.com/johnhsb/kmscon-hangul/releases/latest
 
-## Download
+## 한글 입력 설정
 
-Released tarballs can be found at: https://github.com/kmscon/kmscon/releases
-
-## Install
-
-To compile the kmscon binary, run the standard meson commands:
 ```bash
-meson setup builddir/
-````
+sudo mkdir -p /etc/kmscon
+cat | sudo tee /etc/kmscon/kmscon.conf << 'EOF'
+im-engine=hangul
+im-params=2
+EOF
+```
 
-By default this will install into `/usr/local`, you can change your prefix with `--prefix=/usr`
-(or `meson configure builddir/ -Dprefix=/usr` after the initial meson setup).
-
-Then build and install. Note that this requires ninja.
+또는 서비스 실행 시 옵션 직접 지정:
 ```bash
+kmscon --im-engine=hangul --im-params=2
+```
+
+## systemd 서비스 설정
+
+```bash
+# tty1에서 부팅 시 kmscon 자동 시작
+systemctl enable kmsconvt@tty1.service
+```
+
+## 빌드 (소스에서)
+
+### 의존성 설치 (Debian/Ubuntu)
+
+```bash
+sudo apt install \
+  build-essential meson pkg-config python3 \
+  libxkbcommon-dev libudev-dev libdrm-dev \
+  libgbm-dev libegl-dev libgles-dev \
+  libfreetype-dev libfontconfig-dev \
+  libpango1.0-dev libsystemd-dev \
+  libdbus-1-dev libhangul-dev
+```
+
+### 빌드
+
+```bash
+git clone https://github.com/johnhsb/kmscon-hangul.git
+cd kmscon-hangul
+git clone --depth 1 --branch v4.5.0 https://github.com/kmscon/libtsm subprojects/libtsm
+meson setup builddir/ \
+  --prefix=/usr \
+  -Dim_hangul=enabled \
+  -Dlibtsm:default_library=static \
+  -Dlibtsm:tests=false \
+  --force-fallback-for=libtsm
 meson install -C builddir/
 ```
 
-The following meson options are available.
-They can be used to select backends for several subsystems in kmscon.
-If build-time dependencies cannot be satisfied, an option is automatically turned off, except if you
-explicitly enable it via command line:
+### Debian 패키지 빌드
 
-| option | default | description |
-|:------|:-------:|:-----------|
-|`extra_debug`| `false` | Additional debug outputs |
-|`libseat`| `auto` | Use libseat to get access to device (DRM and inputs) |
-|`video_fbdev`| `auto` | Linux fbdev video backend |
-|`video_drm2d`| `auto` | Linux DRM software-rendering backend |
-|`video_drm3d`| `auto` | Linux DRM hardware-rendering backend |
-|`font_unifont`| `auto` | Static built-in font, with integer scaling (Unicode Unifont) |
-|`font_freetype`| `auto` | Freetype2 based scalable font renderer, also handle bitmap fonts |
-|`font_pango`| `auto` | Pango based scalable font renderer |
-|`renderer_gltex`| `auto` | OpenGLESv2 accelerated renderer |
-|`session_dummy`| `auto` | Dummy fallback session |
-|`session_terminal`| `auto` | Terminal-emulator sessions |
-|`docs`|`auto`| Build manpages and documentation |
-
-
-## Running
-
-To get usage information, run:
 ```bash
-kmscon --help
-```
-You can then run kmscon with:
-```bash
-kmscon [options]
+sudo apt install debhelper devscripts
+git clone --depth 1 --branch v4.5.0 https://github.com/kmscon/libtsm subprojects/libtsm
+dpkg-buildpackage -us -uc -b
 ```
 
-### Locale
+## 빌드 옵션
 
-Kmscon queries and setups system locale settings before starting if systemd-localed is available.
-Otherwise, you can change locale settings via `--xkb-{model,layout,variant,options}` command line options.
-See `man kmscon` for more information.
+| 옵션 | 기본값 | 설명 |
+|:-----|:------:|:-----|
+| `im_hangul` | `auto` | libhangul 한글 입력 백엔드 |
+| `extra_debug` | `false` | 추가 디버그 출력 |
+| `libseat` | `auto` | libseat 기반 장치 접근 |
+| `video_fbdev` | `auto` | Linux fbdev 비디오 백엔드 |
+| `video_drm2d` | `auto` | Linux DRM 소프트웨어 렌더링 |
+| `video_drm3d` | `auto` | Linux DRM 하드웨어 렌더링 |
+| `font_unifont` | `auto` | 내장 유니폰트 |
+| `font_freetype` | `auto` | Freetype2 폰트 렌더러 |
+| `font_pango` | `auto` | Pango 폰트 렌더러 |
+| `renderer_gltex` | `auto` | OpenGLESv2 가속 렌더러 |
+| `docs` | `auto` | 맨페이지 및 문서 빌드 |
 
-### Config file
+## Requirements
 
-The default configuration file is `/etc/kmscon/kmscon.conf`. Any command line option can be put in the config file in
-its long form without the leading `--` (double dash). See `man kmscon` for more information or look at [kmscon.conf](scripts/etc/kmscon.conf.example)
+### Mandatory
+- [libtsm](https://github.com/kmscon/libtsm) v4.5.0 (정적 링크, 별도 설치 불필요)
+- [libudev](https://www.freedesktop.org/software/systemd/man/libudev.html) >= v172
+- [libxkbcommon](https://xkbcommon.org/)
+- **linux-headers**
+
+### Optional
+- [libhangul](https://github.com/libhangul/libhangul): 한글 입력 (`--im-engine=hangul`)
+- [libdrm](https://gitlab.freedesktop.org/mesa/drm): DRM/KMS 비디오
+- **OpenGLES2**: 하드웨어 가속 비디오 (libdrm + libgbm + egl + glesv2)
+- [freetype](https://freetype.org/): 폰트 렌더링
+- [pango](https://gitlab.gnome.org/GNOME/pango): Pango 폰트 렌더링
+- [libseat](https://sr.ht/~kennylevinsen/seatd/): 비root 실행
+
+## Config file
+
+기본 설정 파일 경로: `/etc/kmscon/kmscon.conf`
+
+모든 커맨드라인 옵션을 `--` 없이 설정 파일에 기재할 수 있습니다.
+예시: [kmscon.conf](scripts/etc/kmscon.conf.example)
 
 ## License
 
-This software is licensed under the terms of an MIT-like license. Please see
-[`COPYING`](./COPYING) for further information.
+MIT License. 자세한 내용은 [`COPYING`](./COPYING) 참조.
 
-## History
+## Upstream
 
-This project was maintained in [Aetf's](https://github.com/Aetf/kmscon) fork for 11 years, before coming back here in 2025
+이 저장소는 [kmscon/kmscon](https://github.com/kmscon/kmscon) v10.0.0을 기반으로 합니다.
