@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+include /usr/share/dpkg/architecture.mk
+
+export DEB_CFLAGS_APPEND = -Wno-error=date-time
+
+%:
+	dh $@ --buildsystem=meson
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-Dtests=false \
+		-Ddocs=disabled \
+		-Dim_hangul=enabled \
+		-Dlibtsm:default_library=static \
+		--force-fallback-for=libtsm
+
+override_dh_auto_install:
+	dh_auto_install

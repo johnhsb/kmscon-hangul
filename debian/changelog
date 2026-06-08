@@ -1,0 +1,18 @@
+kmscon-hangul (10.0.0-2) unstable; urgency=medium
+
+  * im_hangul: rename static functions to avoid libhangul namespace collision
+    (fixes build on Ubuntu Noble / GCC 13 with K&R-style libhangul headers)
+
+ -- JohnnyB <johnhsb@outlook.kr>  Sun, 08 Jun 2026 10:00:00 +0900
+
+kmscon-hangul (10.0.0-1) unstable; urgency=medium
+
+  * New upstream base: kmscon v10.0.0
+  * Add generic input method (IM) abstraction layer (kmscon_im_ops vtable)
+  * Add Korean (Hangul) input method via libhangul as first IM backend
+  * Add --im-engine, --im-params, --grab-im-toggle options
+  * Fix freetype fallback font sizing: use y_ppem instead of line height
+  * Fix use-after-free SEGV in drm perform_modeset() on VT switch / DPMS wake
+  * Update libtsm subproject to v4.5.0 (statically linked)
+
+ -- JohnnyB <johnhsb@outlook.kr>  Thu, 05 Jun 2026 11:00:00 +0900

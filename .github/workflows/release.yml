@@ -1,0 +1,108 @@
+name: Build release packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v10.0.0-1)'
+        required: true
+        default: 'v10.0.0-1'
+
+jobs:
+  build-deb:
+    name: Build Debian package (${{ matrix.arch }})
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runs-on: ubuntu-24.04
+          - arch: arm64
+            runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            debhelper devscripts \
+            meson pkg-config python3 \
+            libxkbcommon-dev \
+            libudev-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libegl-dev \
+            libgles-dev \
+            libfreetype-dev \
+            libfontconfig-dev \
+            libpango1.0-dev \
+            libsystemd-dev \
+            libdbus-1-dev \
+            libhangul-dev
+
+      - name: Build package
+        run: |
+          dpkg-buildpackage -us -uc -b
+          ls -lh ../*.deb
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p artifacts
+          cp ../*.deb ../*.buildinfo ../*.changes artifacts/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.arch }}
+          path: artifacts/
+
+  release:
+    name: Create GitHub Release
+    needs: build-deb
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh artifacts/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          name: kmscon-hangul ${{ github.ref_name || inputs.tag }}
+          body: |
+            ## kmscon-hangul ${{ github.ref_name || inputs.tag }}
+
+            kmscon v10.0.0 기반 한글 입력 지원 및 버그 수정 패키지
+
+            ### 변경 사항
+            - 범용 IM 추상화 레이어(kmscon_im_ops) + libhangul 한글 입력 백엔드
+            - `--im-engine`, `--im-params`, `--grab-im-toggle` 옵션 추가
+            - freetype CJK 폰트 사이즈 수정 (`y_ppem` 기반)
+            - drm `perform_modeset()` use-after-free SEGV 수정 (VT 전환/DPMS 복귀 시 크래시)
+            - libtsm v4.5.0 정적 링크
+
+            ### 설치 (Debian trixie)
+            ```bash
+            sudo apt install ./kmscon-hangul_*_amd64.deb   # x86_64
+            sudo apt install ./kmscon-hangul_*_arm64.deb   # ARM64
+            ```
+          files: artifacts/*.deb
+          draft: false
+          prerelease: false
