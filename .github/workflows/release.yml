@@ -100,6 +100,7 @@ jobs:
             - `--im-engine`, `--im-params`, `--grab-im-toggle` 옵션 추가
             - freetype CJK 폰트 사이즈 수정 (`y_ppem` 기반)
             - drm `perform_modeset()` use-after-free SEGV 수정 (VT 전환/DPMS 복귀 시 크래시)
+            - bbulk 렌더러: 스크롤 시 한글(전각) 글자 반쪽 잔상이 빈칸에 남는 문제 수정
             - libtsm v4.6.0 정적 링크
 
             ### 설치 (Debian trixie)
