@@ -77,7 +77,7 @@ sudo apt install \
 ```bash
 git clone https://github.com/johnhsb/kmscon-hangul.git
 cd kmscon-hangul
-git clone --depth 1 --branch v4.6.0 https://github.com/kmscon/libtsm subprojects/libtsm
+git clone --depth 1 --branch v4.8.0 https://github.com/kmscon/libtsm subprojects/libtsm
 meson setup builddir/ \
   --prefix=/usr \
   -Dim_hangul=enabled \
@@ -91,7 +91,7 @@ meson install -C builddir/
 
 ```bash
 sudo apt install debhelper devscripts
-git clone --depth 1 --branch v4.6.0 https://github.com/kmscon/libtsm subprojects/libtsm
+git clone --depth 1 --branch v4.8.0 https://github.com/kmscon/libtsm subprojects/libtsm
 dpkg-buildpackage -us -uc -b
 ```
 
@@ -115,7 +115,7 @@ dpkg-buildpackage -us -uc -b
 ## Requirements
 
 ### Mandatory
-- [libtsm](https://github.com/kmscon/libtsm) v4.6.0 (정적 링크, 별도 설치 불필요)
+- [libtsm](https://github.com/kmscon/libtsm) v4.8.0 (정적 링크, 별도 설치 불필요)
 - [libudev](https://www.freedesktop.org/software/systemd/man/libudev.html) >= v172
 - [libxkbcommon](https://xkbcommon.org/)
 - **linux-headers**

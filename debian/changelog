@@ -1,3 +1,12 @@
+kmscon-hangul (10.0.1-3) unstable; urgency=medium
+
+  * Update libtsm subproject to v4.8.0 (statically linked). Includes
+    libtsm 2753e37, which clears the character of the trailing cells of a
+    wide glyph on write; fixes stale characters showing through Hangul
+    text redrawn in place (e.g. nvim page up/down, tmux).
+
+ -- JohnnyB <johnhsb@outlook.kr>  Tue, 10 Nov 2026 00:00:00 +0900
+
 kmscon-hangul (10.0.1-2) unstable; urgency=medium
 
   * render/bbulk: clear stale double_width flag on overflow cells

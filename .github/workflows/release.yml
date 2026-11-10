@@ -30,7 +30,7 @@ jobs:
           submodules: recursive
 
       - name: Fetch libtsm subproject
-        run: git clone --depth 1 --branch v4.6.0 https://github.com/kmscon/libtsm subprojects/libtsm
+        run: git clone --depth 1 --branch v4.8.0 https://github.com/kmscon/libtsm subprojects/libtsm
 
       - name: Install build dependencies
         run: |
@@ -101,7 +101,8 @@ jobs:
             - freetype CJK 폰트 사이즈 수정 (`y_ppem` 기반)
             - drm `perform_modeset()` use-after-free SEGV 수정 (VT 전환/DPMS 복귀 시 크래시)
             - bbulk 렌더러: 스크롤 시 한글(전각) 글자 반쪽 잔상이 빈칸에 남는 문제 수정
-            - libtsm v4.6.0 정적 링크
+            - nvim 등에서 한글을 기존 글자 위에 덮어쓸 때 이전 글자가 비쳐 보이는 문제 수정 (libtsm v4.8.0)
+            - libtsm v4.8.0 정적 링크
 
             ### 설치 (Debian trixie)
             ```bash
